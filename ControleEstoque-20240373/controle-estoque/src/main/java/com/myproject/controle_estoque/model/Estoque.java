@@ -1,5 +1,7 @@
 package com.myproject.controle_estoque.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,6 +24,6 @@ public class Estoque {
 
     @OneToOne
     @JoinColumn(name = "produto_id")
+    @JsonBackReference
     private Produto produto;
-
 }
