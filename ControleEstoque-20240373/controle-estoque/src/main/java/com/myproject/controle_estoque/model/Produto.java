@@ -1,5 +1,8 @@
 package com.myproject.controle_estoque.model;
+
 import java.math.BigDecimal;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -24,6 +27,6 @@ public class Produto {
     private BigDecimal preco;
 
     @OneToOne(mappedBy = "produto", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private Estoque estoque;
-
 }
