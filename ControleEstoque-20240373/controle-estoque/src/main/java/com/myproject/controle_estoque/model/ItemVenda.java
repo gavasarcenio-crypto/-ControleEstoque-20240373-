@@ -21,6 +21,7 @@ public class ItemVenda {
 
     @ManyToOne
     @JoinColumn(name = "venda_id")
+    @JsonIgnore
     private Venda venda;
 
     @ManyToOne
@@ -30,5 +31,6 @@ public class ItemVenda {
     private Integer quantidade;
 
     private BigDecimal precoUnitario;
+
 
 }
