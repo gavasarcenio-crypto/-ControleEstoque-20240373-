@@ -1,21 +1,13 @@
 package com.myproject.controle_estoque.controller;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.myproject.controle_estoque.model.Estoque;
+import com.myproject.controle_estoque.model.Produto;
 import com.myproject.controle_estoque.repository.EstoqueRepository;
 import com.myproject.controle_estoque.repository.ProdutoRepository;
-import com.myproject.controle_estoque.model.Produto;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/estoques")
@@ -27,44 +19,50 @@ public class EstoqueController {
     @Autowired
     private ProdutoRepository produtoRepository;
 
-    @PostMapping
-    public Estoque criar(@RequestBody Estoque estoque) {
-        if (estoque.getProduto() == null || estoque.getProduto().getId() == null) {
-            throw new RuntimeException("Produto não encontrado");
-        }
-        Produto produto = produtoRepository.findById(estoque.getProduto().getId())
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
-        estoque.setProduto(produto);
-        return estoqueRepository.save(estoque);
+    // DTO simples embutido (você pode criar classe separada se preferir)
+    public static class EstoqueDTO {
+        public Integer quantidade;
+        public Long produtoId;
     }
 
-    @GetMapping
-    public List<Estoque> listar() {
-        return estoqueRepository.findAll();
+    @PostMapping
+    public ResponseEntity<?> criar(@RequestBody EstoqueDTO dto) {
+        if (dto == null || dto.produtoId == null) {
+            return ResponseEntity.badRequest().body("produtoId é obrigatório");
+        }
+
+        Produto produto = produtoRepository.findById(dto.produtoId).orElse(null);
+        if (produto == null) {
+            return ResponseEntity.badRequest().body("Produto não encontrado");
+        }
+
+        // Se já existir estoque para esse produto, atualizar a quantidade (opcional)
+        Estoque existente = estoqueRepository.findByProdutoId(produto.getId());
+        if (existente != null) {
+            existente.setQuantidade(dto.quantidade);
+            return ResponseEntity.ok(estoqueRepository.save(existente));
+        }
+
+        Estoque estoque = new Estoque();
+        estoque.setQuantidade(dto.quantidade);
+        estoque.setProduto(produto);
+
+        Estoque salvo = estoqueRepository.save(estoque);
+        return ResponseEntity.ok(salvo);
     }
 
     @GetMapping("/{id}")
-    public Estoque buscar(@PathVariable Long id) {
+    public ResponseEntity<?> getById(@PathVariable Long id) {
         return estoqueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Estoque não encontrado"));
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}")
-    public Estoque atualizar(@PathVariable Long id, @RequestBody Estoque estoque) {
-        Estoque existente = buscar(id);
-        existente.setQuantidade(estoque.getQuantidade());
-        
-        if (estoque.getProduto() != null && estoque.getProduto().getId() != null) {
-            Produto produto = produtoRepository.findById(estoque.getProduto().getId())
-                    .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
-            existente.setProduto(produto);
-        }
-        
-        return estoqueRepository.save(existente);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deletar(@PathVariable Long id) {
-        estoqueRepository.deleteById(id);
+    // opcional: buscar por produto id
+    @GetMapping("/produto/{produtoId}")
+    public ResponseEntity<?> getPorProduto(@PathVariable Long produtoId) {
+        Estoque e = estoqueRepository.findByProdutoId(produtoId);
+        if (e == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(e);
     }
 }
