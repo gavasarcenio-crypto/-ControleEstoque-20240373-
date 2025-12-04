@@ -28,5 +28,7 @@ public class Produto {
 
     @OneToOne(mappedBy = "produto", cascade = CascadeType.ALL)
     @JsonManagedReference
+    @JsonIgnore
     private Estoque estoque;
 }
+
